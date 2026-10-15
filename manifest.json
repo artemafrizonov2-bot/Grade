@@ -7,9 +7,10 @@
   "theme_color": "#121212",
   "icons": [
     {
-      "src": "https://img.icons8.com/color/512/grades.png",
+      "src": "https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/html/html.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
