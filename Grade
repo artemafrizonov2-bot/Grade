@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Калькулятор оценок</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #ffffff;
+            --text-sec: #a0a0a0;
+            --accent: #4dabf7;
+            --g5: #40c057;
+            --g4: #82c91e;
+            --g3: #fab005;
+            --g2: #fa5252;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 60px;
+        }
+        /* Карточка общей статистики */
+        .summary-card {
+            background: linear-gradient(135deg, #1a365d, #2b6cb0);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .summary-info h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .summary-info p {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.75);
+        }
+        .total-avg {
+            font-size: 2.4rem;
+            font-weight: 800;
+        }
+
+        /* Форма добавления предмета */
+        .add-subject-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+        .add-subject-form input {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid #333;
+            color: var(--text);
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .add-subject-form input:focus {
+            border-color: var(--accent);
+        }
+        .add-subject-form button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 0 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* Карточка предмета */
+        .subject-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #2a2a2a;
+        }
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .subject-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            word-break: break-word;
+            padding-right: 10px;
+        }
+        .subject-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .subject-avg {
+            font-size: 1.35rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: #2a2a2a;
+        }
+        .delete-subject {
+            background: none;
+            border: none;
+            color: var(--text-sec);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* Список оценок */
+        .grades-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+            min-height: 36px;
+            align-items: center;
+        }
+        .grade-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #121212;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+        .grade-badge:active {
+            transform: scale(0.9);
+        }
+        .g-5 { background-color: var(--g5); }
+        .g-4 { background-color: var(--g4); }
+        .g-3 { background-color: var(--g3); }
+        .g-2 { background-color: var(--g2); color: #fff; }
+
+        /* Кнопки быстрого ввода */
+        .grade-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .grade-btn {
+            padding: 12px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            color: #121212;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .grade-btn:active {
+            opacity: 0.7;
+            transform: scale(0.96);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-sec);
+            margin-top: 40px;
+            font-size: 0.95rem;
+        }
+        .hint {
+            font-size: 0.75rem;
+            color: var(--text-sec);
+            margin-bottom: 10px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="summary-card">
+        <div class="summary-info">
+            <h1>Общий средний балл</h1>
+            <p id="total-subjects">Предметов: 0 | Оценок: 0</p>
+        </div>
+        <div class="total-avg" id="overall-avg">0.00</div>
+    </div>
+
+    <div class="add-subject-form">
+        <input type="text" id="subject-input" placeholder="Название предмета..." onkeypress="if(event.key === 'Enter') addSubject()">
+        <button onclick="addSubject()">Добавить</button>
+    </div>
+
+    <div id="subjects-container"></div>
+
+    <script>
+        let subjects = JSON.parse(localStorage.getItem('grades_app_data')) || [];
+
+        function saveData() {
+            localStorage.setItem('grades_app_data', JSON.stringify(subjects));
+            render();
+        }
+
+        function addSubject() {
+            const input = document.getElementById('subject-input');
+            const name = input.value.trim();
+            if (!name) return;
+
+            subjects.push({
+                id: Date.now(),
+                name: name,
+                grades: []
+            });
+            input.value = '';
+            saveData();
+        }
+
+        function deleteSubject(id) {
+            if (confirm('Удалить этот предмет и все его оценки?')) {
+                subjects = subjects.filter(s => s.id !== id);
+                saveData();
+            }
+        }
+
+        function addGrade(subjectId, grade) {
+            const subject = subjects.find(s => s.id === subjectId);
+            if (subject) {
+                subject.grades.push(grade);
+                saveData();
+            }
+        }
+
+        function removeGrade(subjectId, gradeIndex) {
+            const subject = subjects.find(s => s.id === subjectId);
+            if (subject) {
+                subject.grades.splice(gradeIndex, 1);
+                saveData();
+            }
+        }
+
+        function calculateAvg(grades) {
+            if (grades.length === 0) return 0;
+            const sum = grades.reduce((a, b) => a + b, 0);
+            return (sum / grades.length).toFixed(2);
+        }
+
+        function getAvgColor(avg) {
+            if (avg == 0) return '#a0a0a0';
+            if (avg >= 4.5) return 'var(--g5)';
+            if (avg >= 3.5) return 'var(--g4)';
+            if (avg >= 2.5) return 'var(--g3)';
+            return 'var(--g2)';
+        }
+
+        function render() {
+            const container = document.getElementById('subjects-container');
+            container.innerHTML = '';
+
+            let totalGradesSum = 0;
+            let totalGradesCount = 0;
+
+            if (subjects.length === 0) {
+                container.innerHTML = '<div class="empty-state">Пока нет предметов. Добавь первый сверху!</div>';
+            }
+
+            subjects.forEach(subject => {
+                const avg = calculateAvg(subject.grades);
+                
+                subject.grades.forEach(g => {
+                    totalGradesSum += g;
+                    totalGradesCount++;
+                });
+
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+
+                const gradesHtml = subject.grades.length > 0 
+                    ? subject.grades.map((g, idx) => `<div class="grade-badge g-${g}" onclick="removeGrade(${subject.id}, ${idx})">${g}</div>`).join('')
+                    : '<span style="color: var(--text-sec); font-size: 0.85rem;">Нет оценок</span>';
+
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <div class="subject-title">${subject.name}</div>
+                        <div class="subject-meta">
+                            <div class="subject-avg" style="color: ${getAvgColor(avg)}">${avg > 0 ? avg : '—'}</div>
+                            <button class="delete-subject" onclick="deleteSubject(${subject.id})">✕</button>
+                        </div>
+                    </div>
+                    ${subject.grades.length > 0 ? '<span class="hint">Нажми на оценку, чтобы удалить её</span>' : ''}
+                    <div class="grades-list">
+                        ${gradesHtml}
+                    </div>
+                    <div class="grade-controls">
+                        <button class="grade-btn g-5" onclick="addGrade(${subject.id}, 5)">+5</button>
+                        <button class="grade-btn g-4" onclick="addGrade(${subject.id}, 4)">+4</button>
+                        <button class="grade-btn g-3" onclick="addGrade(${subject.id}, 3)">+3</button>
+                        <button class="grade-btn g-2" onclick="addGrade(${subject.id}, 2)">+2</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Обновление шапки
+            const overallAvgEl = document.getElementById('overall-avg');
+            const totalSubjectsEl = document.getElementById('total-subjects');
+
+            const overallAvg = totalGradesCount > 0 ? (totalGradesSum / totalGradesCount).toFixed(2) : '0.00';
+            overallAvgEl.textContent = overallAvg;
+            totalSubjectsEl.textContent = `Предметов: ${subjects.length} | Оценок: ${totalGradesCount}`;
+        }
+
+        render();
+    </script>
+</body>
+</html>
