@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Калькулятор оценок</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#121212">
+    <title>Оценки</title>
     <style>
         :root {
             --bg: #121212;
@@ -15,6 +19,7 @@
             --g4: #82c91e;
             --g3: #fab005;
             --g2: #fa5252;
+            --g0: #868e96;
         }
         * {
             box-sizing: border-box;
@@ -35,43 +40,57 @@
         .summary-card {
             background: linear-gradient(135deg, #1a365d, #2b6cb0);
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .summary-info h1 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .summary-info p {
-            font-size: 0.85rem;
-            color: rgba(255,255,255,0.75);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.4;
         }
         .total-avg {
-            font-size: 2.4rem;
+            font-size: 2.2rem;
             font-weight: 800;
+            margin-left: 12px;
+        }
+        .mode-toggle {
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         /* Форма добавления предмета */
         .add-subject-form {
             display: flex;
             gap: 10px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
         .add-subject-form input {
             flex: 1;
             background: var(--card);
             border: 1px solid #333;
             color: var(--text);
-            padding: 14px 16px;
+            padding: 12px 14px;
             border-radius: 12px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
         }
         .add-subject-form input:focus {
             border-color: var(--accent);
@@ -80,45 +99,86 @@
             background: var(--accent);
             color: #000;
             border: none;
-            padding: 0 20px;
+            padding: 0 18px;
             border-radius: 12px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
         }
 
-        /* Карточка предмета */
+        /* Контейнер предметов (обычный и виджет-плитка) */
+        #subjects-container.widget-mode {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
         .subject-card {
             background: var(--card);
             border-radius: 16px;
             padding: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             border: 1px solid #2a2a2a;
+        }
+        #subjects-container.widget-mode .subject-card {
+            margin-bottom: 0;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .subject-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+        }
+        #subjects-container.widget-mode .subject-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 0;
         }
         .subject-title {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 600;
             word-break: break-word;
-            padding-right: 10px;
+            padding-right: 8px;
+        }
+        #subjects-container.widget-mode .subject-title {
+            font-size: 0.95rem;
+            padding-right: 0;
         }
         .subject-meta {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             flex-shrink: 0;
         }
-        .subject-avg {
-            font-size: 1.35rem;
-            font-weight: 700;
+        #subjects-container.widget-mode .subject-meta {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .subject-stats {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            background: #2a2a2a;
             padding: 4px 10px;
             border-radius: 8px;
-            background: #2a2a2a;
+        }
+        #subjects-container.widget-mode .subject-stats {
+            width: 100%;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subject-avg {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .subject-sum {
+            font-size: 0.72rem;
+            color: var(--text-sec);
         }
         .delete-subject {
             background: none;
@@ -129,68 +189,98 @@
             padding: 4px;
         }
 
+        /* Скрытие элементов в режиме виджета */
+        body.is-widget .add-subject-form,
+        body.is-widget .delete-subject,
+        body.is-widget .hint,
+        body.is-widget .grades-list,
+        body.is-widget .custom-grade-row,
+        body.is-widget .grade-controls {
+            display: none !important;
+        }
+
         /* Список оценок */
         .grades-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             min-height: 36px;
             align-items: center;
         }
         .grade-badge {
-            width: 34px;
+            min-width: 34px;
             height: 34px;
+            padding: 0 8px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #121212;
             cursor: pointer;
             user-select: none;
-            transition: transform 0.1s;
         }
-        .grade-badge:active {
-            transform: scale(0.9);
+        .g-high { background-color: var(--g5); }
+        .g-good { background-color: var(--g4); }
+        .g-mid  { background-color: var(--g3); }
+        .g-low  { background-color: var(--g2); color: #fff; }
+        .g-zero { background-color: var(--g0); color: #fff; }
+
+        /* Ручной ввод оценки */
+        .custom-grade-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
         }
-        .g-5 { background-color: var(--g5); }
-        .g-4 { background-color: var(--g4); }
-        .g-3 { background-color: var(--g3); }
-        .g-2 { background-color: var(--g2); color: #fff; }
+        .custom-grade-row input {
+            flex: 1;
+            background: #141414;
+            border: 1px solid #333;
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .custom-grade-row button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 0 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
 
         /* Кнопки быстрого ввода */
         .grade-controls {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
         }
         .grade-btn {
-            padding: 12px 0;
+            padding: 10px 0;
             border: none;
             border-radius: 10px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             color: #121212;
-            transition: opacity 0.2s, transform 0.1s;
         }
-        .grade-btn:active {
-            opacity: 0.7;
-            transform: scale(0.96);
-        }
-
         .empty-state {
+            grid-column: 1 / -1;
             text-align: center;
             color: var(--text-sec);
-            margin-top: 40px;
+            margin-top: 30px;
             font-size: 0.95rem;
         }
         .hint {
             font-size: 0.75rem;
             color: var(--text-sec);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: block;
         }
     </style>
@@ -199,7 +289,10 @@
 
     <div class="summary-card">
         <div class="summary-info">
-            <h1>Общий средний балл</h1>
+            <h1>
+                Средний балл
+                <button class="mode-toggle" id="mode-btn" onclick="toggleWidgetMode()">Виджет</button>
+            </h1>
             <p id="total-subjects">Предметов: 0 | Оценок: 0</p>
         </div>
         <div class="total-avg" id="overall-avg">0.00</div>
@@ -214,6 +307,27 @@
 
     <script>
         let subjects = JSON.parse(localStorage.getItem('grades_app_data')) || [];
+        let isWidgetMode = JSON.parse(localStorage.getItem('grades_widget_mode')) || false;
+
+        function toggleWidgetMode() {
+            isWidgetMode = !isWidgetMode;
+            localStorage.setItem('grades_widget_mode', JSON.stringify(isWidgetMode));
+            applyMode();
+        }
+
+        function applyMode() {
+            const container = document.getElementById('subjects-container');
+            const btn = document.getElementById('mode-btn');
+            if (isWidgetMode) {
+                document.body.classList.add('is-widget');
+                container.classList.add('widget-mode');
+                btn.textContent = 'Редактор';
+            } else {
+                document.body.classList.remove('is-widget');
+                container.classList.remove('widget-mode');
+                btn.textContent = 'Виджет';
+            }
+        }
 
         function saveData() {
             localStorage.setItem('grades_app_data', JSON.stringify(subjects));
@@ -225,11 +339,7 @@
             const name = input.value.trim();
             if (!name) return;
 
-            subjects.push({
-                id: Date.now(),
-                name: name,
-                grades: []
-            });
+            subjects.push({ id: Date.now(), name: name, grades: [] });
             input.value = '';
             saveData();
         }
@@ -241,12 +351,22 @@
             }
         }
 
-        function addGrade(subjectId, grade) {
+        function addGrade(subjectId, gradeValue) {
+            const parsed = parseFloat(String(gradeValue).replace(',', '.'));
+            if (isNaN(parsed)) return;
+
             const subject = subjects.find(s => s.id === subjectId);
             if (subject) {
-                subject.grades.push(grade);
+                subject.grades.push(parsed);
                 saveData();
             }
+        }
+
+        function addCustomGrade(subjectId) {
+            const input = document.getElementById('custom-input-' + subjectId);
+            if (!input || input.value.trim() === '') return;
+            addGrade(subjectId, input.value);
+            input.value = '';
         }
 
         function removeGrade(subjectId, gradeIndex) {
@@ -257,21 +377,29 @@
             }
         }
 
-        function calculateAvg(grades) {
-            if (grades.length === 0) return 0;
-            const sum = grades.reduce((a, b) => a + b, 0);
-            return (sum / grades.length).toFixed(2);
+        function formatNum(num) {
+            return Number(Math.round(num + 'e2') + 'e-2');
         }
 
-        function getAvgColor(avg) {
-            if (avg == 0) return '#a0a0a0';
+        function getBadgeClass(g) {
+            if (g <= 0) return 'g-zero';
+            if (g < 2.5) return 'g-low';
+            if (g < 3.5) return 'g-mid';
+            if (g < 4.5) return 'g-good';
+            return 'g-high';
+        }
+
+        function getAvgColor(avg, hasGrades) {
+            if (!hasGrades) return '#a0a0a0';
             if (avg >= 4.5) return 'var(--g5)';
             if (avg >= 3.5) return 'var(--g4)';
             if (avg >= 2.5) return 'var(--g3)';
-            return 'var(--g2)';
+            if (avg > 0) return 'var(--g2)';
+            return 'var(--g0)';
         }
 
         function render() {
+            applyMode();
             const container = document.getElementById('subjects-container');
             container.innerHTML = '';
 
@@ -279,11 +407,13 @@
             let totalGradesCount = 0;
 
             if (subjects.length === 0) {
-                container.innerHTML = '<div class="empty-state">Пока нет предметов. Добавь первый сверху!</div>';
+                container.innerHTML = '<div class="empty-state">Пока нет предметов. Добавь первый!</div>';
             }
 
             subjects.forEach(subject => {
-                const avg = calculateAvg(subject.grades);
+                const hasGrades = subject.grades.length > 0;
+                const sum = subject.grades.reduce((a, b) => a + b, 0);
+                const avg = hasGrades ? (sum / subject.grades.length).toFixed(2) : 0;
                 
                 subject.grades.forEach(g => {
                     totalGradesSum += g;
@@ -293,39 +423,41 @@
                 const card = document.createElement('div');
                 card.className = 'subject-card';
 
-                const gradesHtml = subject.grades.length > 0 
-                    ? subject.grades.map((g, idx) => `<div class="grade-badge g-${g}" onclick="removeGrade(${subject.id}, ${idx})">${g}</div>`).join('')
+                const gradesHtml = hasGrades 
+                    ? subject.grades.map((g, idx) => `<div class="grade-badge ${getBadgeClass(g)}" onclick="removeGrade(${subject.id}, ${idx})">${formatNum(g)}</div>`).join('')
                     : '<span style="color: var(--text-sec); font-size: 0.85rem;">Нет оценок</span>';
 
                 card.innerHTML = `
                     <div class="subject-header">
                         <div class="subject-title">${subject.name}</div>
                         <div class="subject-meta">
-                            <div class="subject-avg" style="color: ${getAvgColor(avg)}">${avg > 0 ? avg : '—'}</div>
+                            <div class="subject-stats">
+                                <div class="subject-avg" style="color: ${getAvgColor(avg, hasGrades)}">${hasGrades ? avg : '—'}</div>
+                                <div class="subject-sum">Σ: ${formatNum(sum)}</div>
+                            </div>
                             <button class="delete-subject" onclick="deleteSubject(${subject.id})">✕</button>
                         </div>
                     </div>
-                    ${subject.grades.length > 0 ? '<span class="hint">Нажми на оценку, чтобы удалить её</span>' : ''}
-                    <div class="grades-list">
-                        ${gradesHtml}
+                    ${hasGrades ? '<span class="hint">Нажми на оценку, чтобы удалить её</span>' : ''}
+                    <div class="grades-list">${gradesHtml}</div>
+                    <div class="custom-grade-row">
+                        <input type="text" inputmode="decimal" id="custom-input-${subject.id}" placeholder="Свой балл (0.1, 0, 1.5)..." onkeypress="if(event.key === 'Enter') addCustomGrade(${subject.id})">
+                        <button onclick="addCustomGrade(${subject.id})">+ Ввод</button>
                     </div>
                     <div class="grade-controls">
-                        <button class="grade-btn g-5" onclick="addGrade(${subject.id}, 5)">+5</button>
-                        <button class="grade-btn g-4" onclick="addGrade(${subject.id}, 4)">+4</button>
-                        <button class="grade-btn g-3" onclick="addGrade(${subject.id}, 3)">+3</button>
-                        <button class="grade-btn g-2" onclick="addGrade(${subject.id}, 2)">+2</button>
+                        <button class="grade-btn g-zero" onclick="addGrade(${subject.id}, 0)">+0</button>
+                        <button class="grade-btn g-low" onclick="addGrade(${subject.id}, 2)">+2</button>
+                        <button class="grade-btn g-mid" onclick="addGrade(${subject.id}, 3)">+3</button>
+                        <button class="grade-btn g-good" onclick="addGrade(${subject.id}, 4)">+4</button>
+                        <button class="grade-btn g-high" onclick="addGrade(${subject.id}, 5)">+5</button>
                     </div>
                 `;
                 container.appendChild(card);
             });
 
-            // Обновление шапки
-            const overallAvgEl = document.getElementById('overall-avg');
-            const totalSubjectsEl = document.getElementById('total-subjects');
-
             const overallAvg = totalGradesCount > 0 ? (totalGradesSum / totalGradesCount).toFixed(2) : '0.00';
-            overallAvgEl.textContent = overallAvg;
-            totalSubjectsEl.textContent = `Предметов: ${subjects.length} | Оценок: ${totalGradesCount}`;
+            document.getElementById('overall-avg').textContent = overallAvg;
+            document.getElementById('total-subjects').textContent = `Предметов: ${subjects.length} | Оценок: ${totalGradesCount} | Сумма: ${formatNum(totalGradesSum)}`;
         }
 
         render();
